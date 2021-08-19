@@ -27,6 +27,8 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
     
     open var configureLinkAttribute: ConfigureLinkAttribute?
     
+    open var isNeedFormatHTML: Bool = false
+    
     @IBInspectable open var mentionColor: UIColor = .blue {
         didSet { updateTextStorage(parseText: false) }
     }
@@ -289,9 +291,12 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
         if parseText {
             clearActiveElements()
             let newString = parseTextAndExtractActiveElements(mutAttrString)
-            mutAttrString.mutableString.setString(newString)
+            if isNeedFormatHTML {
+                mutAttrString = newString.htmlToAttributedString
+            } else {
+                mutAttrString.mutableString.setString(newString)
+            }
         }
-        
         addLinkAttribute(mutAttrString)
         textStorage.setAttributedString(mutAttrString)
         _customizing = true
@@ -546,5 +551,16 @@ extension ActiveLabel: UIGestureRecognizerDelegate {
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
+    }
+}
+
+extension String {
+    var htmlToAttributedString: NSAttributedString? {
+        guard let data = data(using: .utf8) else { return nil }
+        do {
+            return try NSAttributedString(data: data, options: [.documentType: NSAttributedString.DocumentType.html, .characterEncoding:String.Encoding.utf8.rawValue], documentAttributes: nil)
+        } catch {
+            return nil
+        }
     }
 }
